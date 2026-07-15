@@ -1,0 +1,97 @@
+/* ============================================================================
+   AutoTrimps play-shell — the disclosure + first-load save-import UI layered on
+   top of the forked Trimps game. Kept in its own file so the diff against
+   upstream Trimps stays tiny (only a few <script>/<link> lines in index.html),
+   which keeps future `git merge upstream/master` clean.
+   ============================================================================ */
+
+/* --- disclosure: the game's bottom-right version button, repurposed --------- */
+/* Tones down the game's loud green/red "btn-new" gradient into a neutral,
+   readable disclosure label. See repurposeVersionButton() in play-shell.js. */
+.btn.atplay-verbtn {
+  background: #171a21 !important;
+  color: #cfd6e4 !important;
+  font-size: 0.82em;
+  white-space: nowrap;
+}
+.btn.atplay-verbtn:hover { background: #232833 !important; }
+
+/* --- sources popover (opened from the version button, bottom-right) --------- */
+#atplay-attrib {
+  position: fixed;
+  bottom: 40px;
+  right: 8px;
+  z-index: 999999;
+  max-width: 340px;
+  font: 13px/1.5 system-ui, sans-serif;
+  background: #171a21;
+  color: #dfe4ee;
+  border: 1px solid #3a4152;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+}
+#atplay-attrib h4 { margin: 0 0 6px; font-size: 13px; color: #9ecbff; }
+#atplay-attrib p { margin: 0 0 8px; }
+#atplay-attrib .atplay-ver { color: #aab3c4; font-size: 12px; }
+#atplay-attrib a { color: #7fb4ff; }
+#atplay-attrib .atplay-close {
+  display: inline-block;
+  margin-top: 4px;
+  cursor: pointer;
+  color: #9aa4b6;
+}
+#atplay-attrib .atplay-close:hover { color: #dfe4ee; }
+
+/* --- combined first-load dialog ------------------------------------------- */
+#atplay-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000000;
+  background: rgba(6, 8, 12, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#atplay-modal {
+  max-width: 520px;
+  width: calc(100% - 32px);
+  font: 15px/1.55 system-ui, sans-serif;
+  background: #1b1f27;
+  color: #e6eaf2;
+  border: 1px solid #3a4152;
+  border-radius: 12px;
+  padding: 24px 26px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+#atplay-modal h2 { margin: 0 0 12px; font-size: 20px; color: #9ecbff; }
+#atplay-modal p { margin: 0 0 12px; }
+#atplay-modal a { color: #7fb4ff; }
+#atplay-modal .atplay-note {
+  font-size: 12.5px;
+  color: #9aa4b6;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid #3a4152;
+  padding: 8px 10px;
+  border-radius: 4px;
+  margin: 0 0 16px;
+}
+#atplay-modal .atplay-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+#atplay-modal button {
+  font: 600 14px system-ui, sans-serif;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+#atplay-modal .atplay-primary { background: #2f7de0; color: #fff; }
+#atplay-modal .atplay-primary:hover { background: #3f8df0; }
+#atplay-modal .atplay-secondary { background: #2b303b; color: #cfd6e4; }
+#atplay-modal .atplay-secondary:hover { background: #353b48; }
+#atplay-modal .atplay-ver {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid #2b303b;
+  font-size: 12px;
+  color: #8a93a6;
+}
