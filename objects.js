@@ -1630,7 +1630,7 @@ var autoBattle = {
             doStuff: function(){
                 autoBattle.trimp.shockMod += this.shockMod();
                 autoBattle.trimp.shockChance += this.shockChance();
-                if (autoBattle.enemy.shock.time >= 0) autoBattle.trimp.attackSpeed *= this.attackSpeed();
+                if (autoBattle.enemy.shock.time > 0) autoBattle.trimp.attackSpeed *= this.attackSpeed();
                 autoBattle.trimp.attack += (Math.min(10, autoBattle.enemy.shock.count) * this.attack());
                 autoBattle.trimp.shockResist += this.shockResist();
             },
@@ -4973,7 +4973,7 @@ var u2Mutations = {
     },
     toggleRespec: function(displayOnly, forceHide){
         var mutRespecBtn = document.getElementById('respecMutatorsBtn');
-        if (forceHide || game.global.highestRadonLevelCleared < 200 || this.purhcaseCount < 1) {
+        if (forceHide || game.global.highestRadonLevelCleared < 200 || this.purchaseCount < 1) {
             this.respecOnPortal = false;
             mutRespecBtn.style.display = 'none';
             return;

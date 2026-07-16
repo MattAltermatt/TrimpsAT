@@ -27,7 +27,7 @@ var toReturn = {
 		version: 4.914,
 		isBeta: false,
 		betaV: 7,
-		killSavesBelow: 0.13,
+		killSavesBelow: 4,
 		uniqueId: new Date().getTime() + "" + Math.floor(Math.random() * 1e10),
 		playerGathering: "",
 		playerModifier: 1,
@@ -4820,7 +4820,7 @@ var toReturn = {
 				message("You have a new quest! <b>" + this.getQuestDescription() + "</b>. Good luck!", "Notices", "*exclamation", "questMessage questNew")
 			},
 			getQuestDescription: function(addProgress){
-				if (this.questId == -1) "No active quest";
+				if (this.questId == -1) return "No active quest";
 				var desc = this.questDescriptions[this.questId];
 				if (this.questId <= 1) desc = desc.replace("{resource}", this.resource);
 				if (addProgress) desc += ". Progress: " + this.getQuestProgress();

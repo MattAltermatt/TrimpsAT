@@ -3873,7 +3873,7 @@ function getLootBd(what) {
 		}
 		else{
 			windMod = game.empowerments.Wind.getCombatModifier();
-			baseMod *= game.empowerments.Wind.getModifier();
+			baseMod = game.empowerments.Wind.getModifier();
 		}
 		baseMod *= 100;
 		currentCalc *= (1 + windMod);

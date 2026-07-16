@@ -315,10 +315,35 @@
     document.getElementById('atplay-fresh').addEventListener('click', closeModal);
   }
 
+  // -- issue #4: hide the dead PlayFab "Online Saving" setting ----------------
+  // On this rehost origin the game's online/platform save back-ends CANNOT work:
+  // no PlayFab title this fork owns (the bundled SDK hardcoded the OFFICIAL title
+  // 9186), no Kongregate shell, no Steam/greenworks runtime. The PlayFab SDK
+  // <script> is removed from index.html and the vendored Playfab/ dir is deleted.
+  // The PlayFab entry points that touch the SDK already fail closed when it's
+  // absent: saveToPlayFab/loadFromPlayFab self-guard on `typeof PlayFab`, and
+  // enablePlayFab is guarded in main.js (so load()'s top-level call can't pop the
+  // login tooltip — a play-shell override loads too late for that). Kongregate/
+  // Steam settings rows are already hidden in-browser by their own lockUnless
+  // (nw !== undefined). All that's left is the PlayFab row itself, which DOES draw
+  // in-browser (config.js:1004 lockUnless returns true when `nw` is undefined).
+  // Override lockUnless to false so the dead "Online Saving" row never renders,
+  // and force it off. Runs in init(), after `game` exists.
+  function gatePlayFabSetting() {
+    try {
+      var opt = game.options.menu.usePlayFab;
+      if (opt) {
+        opt.enabled = 0;
+        opt.lockUnless = function () { return false; };
+      }
+    } catch (e) {}
+  }
+
   // -- boot -------------------------------------------------------------------
   function init() {
     setupDynamicTitle();                 // #3: live "Z.. · .. He · TrimpsAT" tab title
     suppressNativePopups();
+    gatePlayFabSetting();                // #4: hide dead PlayFab "Online Saving" row
     var tr = trimpsVersion();            // game version, carried in the label's #versionNumber span
     var panel = buildSourcesPopover();
     var btn = repurposeVersionButton(panel);

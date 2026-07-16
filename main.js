@@ -313,12 +313,7 @@ function load(saveString, autoLoad, fromPf) {
 	}
 	resetGame();
     if (game.global.killSavesBelow > oldVersion) {
-		if (savegame.global.version == 0.07){
-			game.global.kongBonusMode = true;
-			activateKongBonus(savegame.global.world);
-			return false;
-		}
-        message("I'm so terribly sorry, but your previous save game (version " + savegame.global.version + ") does not work in the new version. This should be the last reset!", "Notices");
+        message("This save (version " + savegame.global.version + ") is from a version of Trimps too old to import here. Open it in the official game to update it first, then export and import it again.", "Notices");
         return false;
     }
 	else if (game.global.isBeta) {
@@ -327,15 +322,6 @@ function load(saveString, autoLoad, fromPf) {
 	savegame.global.version = game.global.version;
 	savegame.global.stringVersion = game.global.stringVersion;
 	savegame.global.betaV = game.global.betaV;
-	//Compatibility to new message filter config. Separated from other compatibility as it needs to go into effect before game has the old booleans copied over it.
-	if (oldVersion < 3.51){
-		addNewSetting("timestamps");
-		var oldMsg = savegame.global.messages;
-		savegame.global.messages = game.global.messages;
-		for (var item in oldMsg){
-			savegame.global.messages.enabled = oldMsg[item];
-		}
-	}
 	//Load global
 	if (typeof savegame.global !== 'undefined') {
         for (var item in game.global) {
@@ -434,180 +420,7 @@ function load(saveString, autoLoad, fromPf) {
 	if (savegame.playerSpire) playerSpire.load(savegame.playerSpire)
 	//Compatibility
 
-	if (oldVersion === 1.0){
-		var hasPortal = false;
-		for (var portItem in game.portal){
-			var portUpgrade = game.portal[portItem];
-			if (portUpgrade.level > 0) hasPortal = true;
-			if (typeof portUpgrade.level === 'undefined') continue;
-			for (var d = 0; d < portUpgrade.level; d++){
-				portUpgrade.heliumSpent += Math.ceil((d / 2) + portUpgrade.priceBase * Math.pow(1.3, d));
-			}
-		}
-		if (hasPortal) game.global.totalPortals = 1;
-	}
-	if (oldVersion === 1.01){
-		game.jobs.Dragimp.modifier = (0.5 * Math.pow(1.05, game.buildings.Tribute.owned));
-	}
-	if (oldVersion <= 1.02){
-		for (var checkResourceMax in game.resources){
-			var toCheckMax = game.resources[checkResourceMax];
-			if (toCheckMax.max == -1) continue;
-			toCheckMax.max = parseFloat(toCheckMax.max);
-		}
-	}
-	if (oldVersion <= 1.06){
-		game.resources.trimps.max += (game.buildings.Mansion.owned * 2);
-		game.buildings.Mansion.increase.by = 10;
-	}
-	if (oldVersion <= 1.07){
-		game.global.highestLevelCleared = game.global.world;
-		game.resources.trimps.max += (game.buildings.Wormhole.owned * 500);
-		game.buildings.Wormhole.increase.by = "1000";
-		if (game.global.world >= 33) game.worldUnlocks.Doom.fire();
-	}
-	if (oldVersion < 1.1){
-		if (game.global.world >= 25){
-			for (var mys = 0; mys < Math.floor((game.global.world - 20) / 5); mys++){
-				unlockUpgrade("Gymystic");
-			}
-		}
-	}
-	if (oldVersion < 2.213) {
-		for (var item in game.options.menu){
-			game.options.menu[item].enabled = (game.options.menu[item].enabled) ? 1 : 0;
-		}
-	}
-	if (oldVersion < 2.3){
-		if (game.global.highestLevelCleared >= 80) game.global.prisonClear++;
-		if (game.global.world >= 70) {
-			message("Welcome to 2.3! Since you are currently past Zone 70, you have automatically unlocked the new Challenge - 'Trapper' and the new Job - 'Geneticist'", "Notices");
-			unlockJob("Geneticist");
-		}
-		else if (game.global.highestLevelCleared >= 69){
-			message("Welcome to 2.3! Since you have previously cleared up to at least Zone 70, you have unlocked the new Challenge - 'Trapper'!", "Notices");
-		}
-	}
-	if (oldVersion < 2.7){
-		for (var statName in game.stats){
-			var statItem = game.stats[statName];
-			if (typeof statItem.valueTotal !== 'undefined' && typeof statItem.value !== 'undefined') {
-				statItem.valueTotal = statItem.value;
-				statItem.value = 0;
-			}
-			else if (typeof statItem.valueTotal !== 'undefined' && typeof statItem.valueTotal !== 'function' && typeof savegame.stats !== 'undefined'){
-				if (typeof savegame.stats[statName] !== 'undefined') {
-					statItem.valueTotal = savegame.stats[statName].value;
-					}
-			}
-		}
-		if (game.global.totalHeliumEarned > 0){
-			var totalHelium = 0;
-			for (var item in game.portal){
-				if (game.portal[item].locked) continue;
-				var portUpgrade = game.portal[item];
-				if (typeof portUpgrade.level === 'undefined' || portUpgrade.level <= 0) continue;
-				totalHelium += portUpgrade.heliumSpent;
-			}
-			var newTHV = totalHelium + game.global.heliumLeftover + game.resources.helium.owned;
-			if (game.global.totalHeliumEarned - newTHV > 0) game.stats.spentOnWorms.valueTotal = game.global.totalHeliumEarned - newTHV;
-			game.global.totalHeliumEarned = newTHV;
-		}
-	}
 	var noOfflineTooltip = false;
-	if (oldVersion < 2.72){
-		achievementCompatibilityUnlock();
-		noOfflineTooltip = true;
-	}
-	if (oldVersion < 2.73){
-		if (game.jobs.Geneticist.owned > 0) game.global.lastLowGen = (game.global.lowestGen > 0) ? game.global.lowestGen : game.jobs.Geneticist.owned;
-	}
-	if (oldVersion < 2.75){
-		game.buildings.Wormhole.increase.by = 1500;
-	}
-	if (oldVersion < 2.81 && typeof game.global.lootAvgs !== 'undefined'){
-		game.global.lootAvgs.fragments = {average:0, accumulator: 0}
-	}
-	if (oldVersion < 2.9){
-		if (game.options.menu.showFullBreed.enabled == 2) game.options.menu.showFullBreed.enabled = 1;
-		if (game.global.totalPortals >= 1) message("Use of the portal has created a chance for the Void to seep into your world. Be alert.", "Story", null, "voidMessage");
-	}
-	if (oldVersion < 3){
-		game.global.heirloomSeed = getRandomIntSeeded(game.global.voidSeed, 0, 1000000);
-	}
-	if (oldVersion < 3.1){
-		game.global.heirloomBoneSeed = getRandomIntSeeded(game.global.heirloomSeed, 0, 1000000);
-	}
-	/* if (oldVersion < 3.11){
-		game.global.eggSeed = getRandomIntSeeded(game.global.heirloomBoneSeed, 0, 1000000);
-		cancelTooltip();
-		noOfflineTooltip = true;
-		tooltip("Eggs", null, 'update');
-	} */
-	if (oldVersion < 3.2){
-		game.global.researched = true;
-	}
-	if (oldVersion < 3.21){
-		game.achievements.oneOffs.finished.push(false);
-		game.achievements.oneOffs.filters.push(-1);
-	}
-	if (oldVersion < 3.23){
-		game.global.autoPrestiges = (game.global.autoPrestiges === true) ? 1 : 0;
-		game.global.voidMaxLevel = game.global.highestLevelCleared;
-	}
-	if (oldVersion < 3.3){
-		if (game.global.highestLevelCleared >= 59) game.global.autoUpgradesAvailable = true;
-		if (game.global.sLevel >= 4) game.buildings.Warpstation.craftTime = 0;
-	}
-	if (oldVersion < 3.6){
-		if (game.achievements.oneOffs.finished.length > 12)
-			game.achievements.oneOffs.finished.splice(12, game.achievements.oneOffs.finished.length - 12);
-		var newFinished = game.achievements.oneOffs.finished;
-		var removed = newFinished.splice(10, 2);
-		for (var x = 0; x < 12; x++) newFinished.push(false);
-		newFinished.splice(18, 0, removed[0]);
-		newFinished.splice(19, 0, removed[1]);
-		game.achievements.oneOffs.finished = newFinished;
-		addNewSetting("tinyButtons");
-	}
-	if (oldVersion < 3.7){
-		game.global.messages.Loot.essence = true;
-		if (game.global.highestLevelCleared >= 180) addNewSetting('masteryTab');
-	}
-	if (oldVersion < 3.71){
-		checkAchieve("totalHelium");
-	}
-	if (oldVersion < 3.81){
-		for (var x = 0; x < game.global.gridArray.length; x++){
-			if (game.global.gridArray[x].corrupted) game.global.gridArray[x].mutation = "Corruption";
-		}
-	}
-	if (oldVersion < 3.811){
-		game.global.messages.Loot.events = true;
-	}
-	if (oldVersion < 4){
-		if (game.global.world >= 230) game.global.canMagma = false;
-		else if (game.global.highestLevelCleared > 229){
-			game.global.highestLevelCleared = 229;
-			if (game.global.roboTrimpLevel > 8)
-				game.global.roboTrimpLevel = 8;
-		}
-		game.resources.trimps.potency = 0.0085;
-		if (game.global.spentEssence > 0){
-			for (var item in game.talents){
-				game.talents[item].purchased = false;
-				if (item == "foreman") continue;
-				if (game.talents[item].purchased && typeof game.talents[item].onRespec === 'function') game.talents[item].onRespec();
-			}
-			if (typeof savegame.talents.foreman !== 'undefined' && savegame.talents.foreman.purchased) game.global.autoCraftModifier -= 1250;
-			if (typeof savegame.talents.foreman2 !== 'undefined' && savegame.talents.foreman2.purchased) game.global.autoCraftModifier -= 3750;
-			game.global.essence += game.global.spentEssence;
-			game.global.spentEssence = 0;
-			message("Due to a rework of the current Masteries, all of your spent Dark Essence has been refunded for free! Don't forget to repurchase your Masteries!", "Notices");
-			updateTalentNumbers();
-		}
-		game.global.messages.Loot.magma = true;
-	}
 	if (oldVersion < 4.01){
 		game.global.messages.Loot.events = true;
 		if (game.stats.trimpsGenerated.value > 0){
@@ -1280,23 +1093,6 @@ function load(saveString, autoLoad, fromPf) {
 	if (game.upgrades.Gigastation.done >= 1) loadGigastations();
 	checkChallengeSquaredAllowed();
 
-	if (oldVersion < 2){
-		if (game.global.world == 59){
-			game.global.gridArray[99].name = "Improbability";
-			message("Your Scientists have detected an anomaly at the end of this Zone. Exercise caution.", "Notices");
-		}
-		else if (game.global.world == 60 && game.global.lastClearedCell <= 10){
-			planetBreaker();
-			game.global.world = 59;
-			nextWorld();
-		}
-		else if (game.global.world >= 60){
-			message("There is a new anomaly at 59, but you are too far past to reach it. You will have to use your portal to see the changes it brings. It looks like you have access to a new challenge, however!", "Notices");
-		}
-		else {
-			message("Your scientists have detected an anomaly at the end of Zone 59. They warn you to be careful if you intend to approach it.", "Notices");
-		}
-	}
 	document.getElementById("tab5Text").innerHTML = "+" + prettify(game.global.lastCustomAmt);
 	game.global.lastUnlock = 0;
 	if (game.resources.gems.owned > 0) fadeIn("gems", 10);
@@ -3198,13 +2994,13 @@ function trustworthyTrimps(noTip, forceTime){
 		amt += (amt * getPerkLevel("Motivation") * game.portal.Motivation.modifier);
 		if (getPerkLevel("Motivation_II") > 0) amt *= (1 + (getPerkLevel("Motivation_II") * game.portal.Motivation_II.modifier));
 		if (resName != "gems" && game.permaBoneBonuses.multitasking.owned > 0 && (game.resources.trimps.owned >= game.resources.trimps.realMax())) amt *= (1 + game.permaBoneBonuses.multitasking.mult());
-		if (job != "Explorer"){
+		if (compatible[x] != "Explorer"){
 			if (game.global.challengeActive == "Alchemy") amt *= alchObj.getPotionEffect("Potion of Finding");
 			amt *= alchObj.getPotionEffect("Elixir of Finding");
 		}
 		if (game.global.challengeActive == "Frigid") amt *= game.challenges.Frigid.getShatteredMult();
-		if (game.global.pandCompletions && job != "Explorer") amt *= game.challenges.Pandemonium.getTrimpMult();
-		if (game.global.desoCompletions && job != "Explorer") amt *= game.challenges.Desolation.getTrimpMult();
+		if (game.global.pandCompletions && compatible[x] != "Explorer") amt *= game.challenges.Pandemonium.getTrimpMult();
+		if (game.global.desoCompletions && compatible[x] != "Explorer") amt *= game.challenges.Desolation.getTrimpMult();
 		if (!game.portal.Observation.radLocked && game.global.universe == 2 && game.portal.Observation.trinkets > 0) amt *= game.portal.Observation.getMult();
 		if (resName == "food" || resName == "wood" || resName == "metal"){
 			amt *= getParityBonus();
@@ -3265,10 +3061,10 @@ function trustworthyTrimps(noTip, forceTime){
 		if (challengeActive("Meditate")) amt *= 1.25;
 		if (challengeActive("Balance")) amt *= game.challenges.Balance.getGatherMult();
 		if (game.global.challengeActive == "Unbalance") amt *= game.challenges.Unbalance.getGatherMult();
-		if (game.global.challengeActive == "Archaeology" && resource != "fragments") amt *= game.challenges.Archaeology.getStatMult("science");
-		if (game.global.challengeActive == "Insanity" && resource != "fragments") amt *= game.challenges.Insanity.getLootMult();
-		if (game.challenges.Nurture.boostsActive() && resource != "fragments") amt *= game.challenges.Nurture.getResourceBoost();
-		if (game.global.challengeActive == "Desolation" && resource != "fragments") amt *= game.challenges.Desolation.trimpResourceMult();
+		if (game.global.challengeActive == "Archaeology" && job.increase != "fragments") amt *= game.challenges.Archaeology.getStatMult("science");
+		if (game.global.challengeActive == "Insanity" && job.increase != "fragments") amt *= game.challenges.Insanity.getLootMult();
+		if (game.challenges.Nurture.boostsActive() && job.increase != "fragments") amt *= game.challenges.Nurture.getResourceBoost();
+		if (game.global.challengeActive == "Desolation" && job.increase != "fragments") amt *= game.challenges.Desolation.trimpResourceMult();
 		if (game.global.challengeActive == "Daily"){
 			if (typeof game.global.dailyChallenge.famine !== 'undefined' && x < 4){
 				amt *= dailyModifiers.famine.getMult(game.global.dailyChallenge.famine.strength);
@@ -11916,7 +11712,7 @@ function startFight() {
 		if (game.talents.mapHealth.purchased) {
 			if (game.global.mapHealthActive && !map) {
 				game.global.soldierHealthMax /= 2;
-				if (game.global.soldierHealth > game.global.soldierHealthmax) game.global.soldierHealth = game.global.soldierHealthMax;
+				if (game.global.soldierHealth > game.global.soldierHealthMax) game.global.soldierHealth = game.global.soldierHealthMax;
 				game.global.mapHealthActive = false;
 				if (game.global.universe === 2) {
 					game.global.soldierEnergyShieldMax /= 2;
@@ -11932,7 +11728,7 @@ function startFight() {
 			const mod = 1 + game.talents.voidPower.getTotalVP() / 100;
 			if (game.global.voidPowerActive && (!map || map.location !== 'Void')) {
 				game.global.soldierHealthMax /= mod;
-				if (game.global.soldierHealth > game.global.soldierHealthmax) game.global.soldierHealth = game.global.soldierHealthMax;
+				if (game.global.soldierHealth > game.global.soldierHealthMax) game.global.soldierHealth = game.global.soldierHealthMax;
 				game.global.voidPowerActive = false;
 			} else if (!game.global.voidPowerActive && map && map.location === 'Void') {
 				game.global.soldierHealthMax *= mod;
@@ -12598,7 +12394,7 @@ function getHighestIdealRow(){
 }
 
 function getTalentsPurchased() {
-	let talentsPurchased = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:10, 10:0}
+	let talentsPurchased = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0}
 	for (let talent of Object.values(game.talents)) {
 		if (talent.purchased) talentsPurchased[talent.tier]++ 
 	}
@@ -13066,7 +12862,7 @@ function rewardLiquidZone() {
 		}
 	}
 
-	if (trackedList && messages.exotic && messages.enabled) {
+	if (trackedList.length && messages.exotic && messages.enabled) {
 		text += `Rare Imps: ${trackedList}<br/>`;
 	}
 
@@ -13460,7 +13256,7 @@ function checkMapAtZoneWorld(runMap){
 
 function runMapAtZone(index){
 	var setting = game.options.menu.mapAtZone.getSetZone()[index];
-	if (setting.preset == 5 && !game.global.challengeActive == "Quagmire" && setting.check){
+	if (setting.preset == 5 && game.global.challengeActive != "Quagmire" && setting.check){
 		checkMapAtZoneWorld(true);
 		return;
 	}
@@ -17284,18 +17080,18 @@ function addBoost(level, previewOnly) {
 		var amt = job.owned * job.modifier * add;
 		amt += (amt * getPerkLevel("Motivation") * game.portal.Motivation.modifier);
 		if (getPerkLevel("Motivation_II") > 0) amt *= (1 + (getPerkLevel("Motivation_II") * game.portal.Motivation_II.modifier));
-		if (resource != "gems" && game.permaBoneBonuses.multitasking.owned > 0 && (game.resources.trimps.owned >= game.resources.trimps.realMax())) amt *= (1 + game.permaBoneBonuses.multitasking.mult());
-		if (job != "Explorer"){
+		if (job.increase != "gems" && game.permaBoneBonuses.multitasking.owned > 0 && (game.resources.trimps.owned >= game.resources.trimps.realMax())) amt *= (1 + game.permaBoneBonuses.multitasking.mult());
+		if (compatible[x] != "Explorer"){
 			if (game.global.challengeActive == "Alchemy") amt *= alchObj.getPotionEffect("Potion of Finding");
 			amt *= alchObj.getPotionEffect("Elixir of Finding");
 		}
 		if (game.global.challengeActive == "Frigid") amt *= game.challenges.Frigid.getShatteredMult();
-		if (game.global.pandCompletions && job != "Explorer") amt *= game.challenges.Pandemonium.getTrimpMult();
-		if (game.global.desoCompletions && job != "Explorer") amt *= game.challenges.Desolation.getTrimpMult();
+		if (game.global.pandCompletions && compatible[x] != "Explorer") amt *= game.challenges.Pandemonium.getTrimpMult();
+		if (game.global.desoCompletions && compatible[x] != "Explorer") amt *= game.challenges.Desolation.getTrimpMult();
 		if (!game.portal.Observation.radLocked && game.global.universe == 2 && game.portal.Observation.trinkets > 0) amt *= game.portal.Observation.getMult();
 		if (getPerkLevel("Meditation") > 0) amt *= (1 + (game.portal.Meditation.getBonusPercent() * 0.01));
 		if (Fluffy.isRewardActive('gatherer')) amt *= 2;
-		if (resource == "food" || resource == "wood" || resource == "metal"){
+		if (job.increase == "food" || job.increase == "wood" || job.increase == "metal"){
 			amt *= getParityBonus();
 			if (autoBattle.oneTimers.Gathermate.owned && game.global.universe == 2) amt *= autoBattle.oneTimers.Gathermate.getMult();
 		}
@@ -17307,9 +17103,9 @@ function addBoost(level, previewOnly) {
 		}
 		if (challengeActive("Watch")) amt /= 2;
 		if (challengeActive("Lead") && ((game.global.world % 2) == 1)) amt *= 2;
-		if (game.global.challengeActive == "Archaeology" && resource != "fragments") amt *= game.challenges.Archaeology.getStatMult("science");
+		if (game.global.challengeActive == "Archaeology" && job.increase != "fragments") amt *= game.challenges.Archaeology.getStatMult("science");
 		if (game.global.challengeActive == "Insanity") amt *= game.challenges.Insanity.getLootMult();
-		if (game.global.challengeActive == "Desolation" && resource != "fragments") amt *= game.challenges.Desolation.trimpResourceMult();
+		if (game.global.challengeActive == "Desolation" && job.increase != "fragments") amt *= game.challenges.Desolation.trimpResourceMult();
 		if (game.challenges.Nurture.boostsActive()) amt *= game.challenges.Nurture.getResourceBoost();
 		amt = calcHeirloomBonus("Staff", compatible[x] + "Speed", amt);
 		if (typeof storage[x] !== 'undefined'){
@@ -19483,6 +19279,12 @@ var Fluffy = {
 var playFabId = -1;
 
 function enablePlayFab(){
+	// TrimpsAT #4: the PlayFab SDK is removed on this rehost origin (no title this
+	// fork owns), so online saving cannot work. Bail before showing the login
+	// tooltip. This guard must live here, not in the play-shell: load() calls this
+	// from main.js's own top-level execution, before play-shell.js is parsed, and
+	// main.js's hoisted function declaration would override any earlier global.
+	if (typeof PlayFab === 'undefined') return false;
 	var loggedIn = (playFabId != -1);
 	if (!loggedIn){
 		tooltip("PlayFab Login", null, "update");

@@ -77,7 +77,7 @@ var playerSpire = {
         this.nextTrap = -1;
         this.tutorialStep = 0;
         this.killedSinceLeak = 0;
-        this.savedLayout = [];
+        this.savedLayout1 = [];
         this.savedLayout2 = [];
         this.layout1Note = "";
         this.layout2Note = "";
@@ -524,7 +524,7 @@ var playerSpire = {
             return -1;
         }
         var row = parseInt(row);
-        if (isNumberBad(row) || row > this.rowsAllowed){
+        if (isNumberBad(row) || row < 1 || row > this.rowsAllowed){
             return "Row (the second number) must be between 1 and " + this.rowsAllowed;
             return -1;
         }
@@ -708,7 +708,7 @@ var playerSpire = {
         if (split[0] == "read"){
             if (split [1] == "enemies"){
                 var row = parseInt(split[2]);
-                if (isNumberBad(row) || row > this.rowsAllowed){
+                if (isNumberBad(row) || row < 1 || row > this.rowsAllowed){
                     output.innerHTML = "Row must be between 1 and " + this.rowsAllowed;
                     return;
                 }
@@ -727,7 +727,7 @@ var playerSpire = {
                 return;
             }
             var row = parseInt(split[1]);
-            if (isNumberBad(row) || row > this.rowsAllowed){
+            if (isNumberBad(row) || row < 1 || row > this.rowsAllowed){
                 output.innerHTML = "Row must be between 1 and " + this.rowsAllowed;
                 return;
             }
