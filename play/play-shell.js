@@ -36,7 +36,7 @@
   // (which stays upstream's and drives save compatibility, so we never bump it here).
   // Bump on each TrimpsAT release and add a CHANGELOG.md entry. Surfaced in the
   // disclosure popover + first-load dialog via versionLine().
-  var TRIMPS_AT_VERSION = 'v0.1.0';
+  var TRIMPS_AT_VERSION = 'v0.2.0';
 
   // -- versions ---------------------------------------------------------------
   function atVersion() {

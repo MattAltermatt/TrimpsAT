@@ -13,7 +13,9 @@ saves stay importable to and from official Trimps. The three versions
 Format follows [Keep a Changelog](https://keepachangelog.com/); the fork uses
 [SemVer](https://semver.org/) starting from `0.x` while pre-1.0.
 
-## [Unreleased]
+## [v0.2.0] — 2026-07-15 · dead-save removal + inherited-bug fixes
+
+Based on **Trimps 5.10.1** · **AutoTrimps v6.0.0.105**.
 
 A batch of inherited-upstream correctness fixes plus rehost-specific cleanup.
 No `game.global.stringVersion` change — saves stay cross-compatible with official
@@ -81,4 +83,5 @@ Based on **Trimps 5.10.1** · **AutoTrimps v6.0.0.104**.
   torn-down import dialog, and raise the first-load modal backdrop / sources popover
   z-index to the 32-bit ceiling so game overlays no longer bleed in front of them.
 
+[v0.2.0]: https://github.com/MattAltermatt/TrimpsAT/releases/tag/v0.2.0
 [v0.1.0]: https://github.com/MattAltermatt/TrimpsAT/releases/tag/v0.1.0
