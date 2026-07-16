@@ -32,6 +32,11 @@
   var TRIMPS_UPSTREAM = 'https://github.com/Trimps/Trimps.github.io';
   var TRIMPS_FORK = 'https://github.com/MattAltermatt/TrimpsAT';
   var AUTOTRIMPS_SRC = 'https://github.com/MattAltermatt/AutoTrimps';
+  // This fork's OWN release version — independent of Trimps' in-game stringVersion
+  // (which stays upstream's and drives save compatibility, so we never bump it here).
+  // Bump on each TrimpsAT release and add a CHANGELOG.md entry. Surfaced in the
+  // disclosure popover + first-load dialog via versionLine().
+  var TRIMPS_AT_VERSION = 'v0.1.0';
 
   // -- versions ---------------------------------------------------------------
   function atVersion() {
@@ -46,7 +51,7 @@
   }
   // "AutoTrimps v6.0.0.104 · Trimps 5.10.1" (drops whichever half is unavailable).
   function versionLine() {
-    var at = atVersion(), tr = trimpsVersion(), parts = [];
+    var at = atVersion(), tr = trimpsVersion(), parts = ['TrimpsAT ' + TRIMPS_AT_VERSION];
     if (at) parts.push('AutoTrimps ' + at);
     if (tr) parts.push('Trimps ' + tr);
     return parts.join(' · ');
