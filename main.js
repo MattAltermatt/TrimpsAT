@@ -1174,6 +1174,41 @@ function load(saveString, autoLoad, fromPf) {
     else if (game.global.fighting) startFight();
 	game.options.menu.darkTheme.onToggle();
 	updateLabels();
+	// --- play-shell (fork) stored-XSS hardening (issue #6) ---------------------
+	// Save-sourced strings (perk-preset Names, heirloom names) were copied into
+	// game.global verbatim above — the import path (load(true), ~269/341) and the
+	// legacy migration (~850) both skip the in-game rename paths that html-encode.
+	// They then reach innerHTML / attribute sinks unescaped (presetTab*Text at
+	// 3567/3588/3605, heirloom name at 6951/7378/7439/7529), so a hostile imported
+	// save can run arbitrary JS and exfiltrate localStorage.trimpSave1. The rename
+	// paths already encode, so legit names hold no raw < > " ' — re-encoding just
+	// those chars here (NOT &, so it is idempotent and never double-encodes a legit
+	// already-encoded name across save/load cycles) defangs only crafted names.
+	// Runs on every load() — startup localStorage load AND import — and before the
+	// first render (viewPortalUpgrades below), covering the reload and import paths.
+	// Kept minimal to honor the fork's small-upstream-diff rule; see play/play-shell.js.
+	(function atplaySanitizeSaveNames(){
+		// A save-sourced Name/name can be a NON-string (e.g. a JSON array
+		// ["<img onerror=…>"] or an object) — a bare typeof-string check would pass it
+		// through untouched, and the innerHTML / "+"-into-attribute sinks then coerce it
+		// back to a live string (Array.prototype.toString), firing the payload. We do
+		// NOT String()-coerce here either: an object with a non-callable toString (e.g.
+		// {"toString":1}, valid JSON) makes String() THROW, which would abort this whole
+		// sanitize pass and leave later fields un-encoded. Instead collapse any
+		// non-string to '' (crafted non-string names have no legit display value), then
+		// encode — total, throw-free, and idempotent on legit already-encoded strings.
+		function enc(s){ if (typeof s !== 'string') s = '';
+			return s.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;'); }
+		var pgs = [game.global.perkPresetU1, game.global.perkPresetU2];
+		for (var g = 0; g < pgs.length; g++){
+			if (!pgs[g]) continue;
+			for (var i = 1; i <= 3; i++){ var p = pgs[g]["perkPreset" + i]; if (p && p.Name) p.Name = enc(p.Name); }
+		}
+		var slots = ['ShieldEquipped', 'StaffEquipped', 'CoreEquipped'];
+		for (var s = 0; s < slots.length; s++){ var eq = game.global[slots[s]]; if (eq && eq.name) eq.name = enc(eq.name); }
+		var bags = ['heirloomsCarried', 'heirloomsExtra'];
+		for (var b = 0; b < bags.length; b++){ var arr = game.global[bags[b]] || []; for (var h = 0; h < arr.length; h++){ if (arr[h] && arr[h].name) arr[h].name = enc(arr[h].name); } }
+	})();
 	if (game.global.viewingUpgrades){
 		viewPortalUpgrades();
 		if (game.global.respecActive) respecPerks();

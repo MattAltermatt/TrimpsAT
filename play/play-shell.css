@@ -15,13 +15,21 @@
   white-space: nowrap;
 }
 .btn.atplay-verbtn:hover { background: #232833 !important; }
+/* Automation load-state variants of the version button (issue #2). Placed AFTER
+   .btn.atplay-verbtn so they win on equal specificity. */
+.btn.atplay-verbtn--loading { color: #aab3c4 !important; }
+.btn.atplay-verbtn--failed  { background: #3a1518 !important; color: #ffb4b4 !important; }
+.btn.atplay-verbtn--failed:hover { background: #4a1b1f !important; }
 
 /* --- sources popover (opened from the version button, bottom-right) --------- */
 #atplay-attrib {
   position: fixed;
   bottom: 40px;
   right: 8px;
-  z-index: 999999;
+  /* At the 32-bit z-index ceiling (values above 2147483647 clamp to it, as the
+     game's overlays do too); the popover is appended late, so it sits above those
+     ceiling-clamped overlays by DOM order. */
+  z-index: 2147483647;
   max-width: 340px;
   font: 13px/1.5 system-ui, sans-serif;
   background: #171a21;
@@ -34,6 +42,17 @@
 #atplay-attrib h4 { margin: 0 0 6px; font-size: 13px; color: #9ecbff; }
 #atplay-attrib p { margin: 0 0 8px; }
 #atplay-attrib .atplay-ver { color: #aab3c4; font-size: 12px; }
+/* Failure notice inside the popover, shown only when automation failed (issue #2). */
+#atplay-attrib .atplay-fail {
+  background: #3a1518;
+  border: 1px solid #7a2a2f;
+  color: #ffd0d0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
 #atplay-attrib a { color: #7fb4ff; }
 #atplay-attrib .atplay-close {
   display: inline-block;
@@ -47,7 +66,13 @@
 #atplay-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000000;
+  /* Sits at the 32-bit z-index ceiling. Browsers clamp z-index to 2147483647,
+     and the game's overlays (#achievementPopup 99999999999999, .floatingCombatText
+     9999999999) all specify larger values that clamp to that SAME ceiling — so we
+     can't out-number them. Instead we tie at the ceiling and win by DOM order: this
+     backdrop is appended to <body> last, so it paints over the (earlier) game
+     overlays and dims them. (Was 1000000, which lost the comparison outright.) */
+  z-index: 2147483647;
   background: rgba(6, 8, 12, 0.72);
   display: flex;
   align-items: center;

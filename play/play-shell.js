@@ -52,6 +52,25 @@
     return parts.join(' · ');
   }
 
+  // -- automation load detection (issue #2) -----------------------------------
+  // The AutoTrimps bundle is an external <script> (index.html) with no error
+  // handling; if it 404s / is renamed / errors, the page silently degrades to
+  // plain manual Trimps. Poll globalThis.ATversion — this catches BOTH a bundle
+  // that never loads AND one that loads but never publishes its version (an
+  // onerror handler would miss the latter, and would need an index.html edit). In
+  // the normal case ATversion is already set by the time init() runs, so cb fires
+  // immediately with no wait; the grace window is only ever spent on real failure.
+  var AT_WAIT_MS = 8000;   // AT does deferred init a few seconds post-load; clear it.
+  var AT_POLL_MS = 200;
+  function whenAutomationResolved(cb) {
+    if (atVersion()) { cb(true); return; }
+    var waited = 0;
+    var t = setInterval(function () {
+      if (atVersion()) { clearInterval(t); cb(true); }
+      else if ((waited += AT_POLL_MS) >= AT_WAIT_MS) { clearInterval(t); cb(false); }
+    }, AT_POLL_MS);
+  }
+
   // -- suppress the two native first-load popups ------------------------------
   function suppressNativePopups() {
     // The game's "Welcome" popup was already opened synchronously by load() at
@@ -107,7 +126,12 @@
       var reader = new FileReader();
       reader.onload = function () {
         var box = document.getElementById('importBox');
-        if (box) box.value = String(reader.result || '');
+        // If the Import dialog DOM was torn down while the OS file picker was
+        // open (e.g. a once-per-portal milestone popup rewrote #tipText), the
+        // textarea is gone and load(true) would throw dereferencing it. Bail
+        // cleanly rather than let the import silently die on an uncaught error.
+        if (!box) return;
+        box.value = String(reader.result || '');
         // Same path the native Import button uses: cancelTooltip() then load(true),
         // which reads #importBox.
         if (typeof cancelTooltip === 'function') cancelTooltip();
@@ -120,31 +144,61 @@
     confirmBtn.parentNode.appendChild(input);
   }
 
-  // Force the browser tab to read "TrimpsAT". AutoTrimps' setTitle() rewrites
-  // document.title on each zone change (utils.ts, gated on aWholeNewWorld which is
-  // only true on a zone change) — a MutationObserver on <title> re-asserts ours.
-  // No per-tick churn because setTitle only fires on zone-ups.
-  var STATIC_TITLE = 'TrimpsAT';
-  function setStaticTitle() {
+  // Keep the browser tab showing live progress, e.g. "Z452 · 1.24e30 He · TrimpsAT".
+  // The game never writes document.title itself; only AutoTrimps' setTitle() (the
+  // external bundle) rewrites it, on each zone change. We recompose OUR string on a
+  // light 1s interval so the currency stays fresh between zone-ups, and a
+  // MutationObserver re-asserts the LAST string we composed whenever anything else
+  // overwrites the title. The observer compares against the stored lastTitle (it
+  // never recomputes) and writes only when different, so our own writes can't loop it.
+  var lastTitle = '';
+  function composeTitle() {
+    try {
+      var g = game.global;
+      var isRadon = g.universe === 2;                 // same currency switch the game uses
+      var owned = isRadon ? game.resources.radon.owned : game.resources.helium.owned;
+      var big = isFinite(owned) ? prettify(owned) : '∞';  // prettify() returns an HTML span for Infinity
+      return 'Z' + g.world + ' · ' + big + ' ' + (isRadon ? 'Rn' : 'He') + ' · TrimpsAT';
+    } catch (e) {
+      return 'TrimpsAT';                              // game/resources not ready yet (early boot)
+    }
+  }
+  function refreshTitle() {
+    var desired = composeTitle();
+    lastTitle = desired;
+    if (document.title !== desired) document.title = desired;
+  }
+  function setupDynamicTitle() {
     var titleEl = document.querySelector('title');
     if (!titleEl) { titleEl = document.head.appendChild(document.createElement('title')); }
-    var force = function () { if (document.title !== STATIC_TITLE) document.title = STATIC_TITLE; };
-    force();
+    refreshTitle();
     try {
-      new MutationObserver(force).observe(titleEl, { childList: true, characterData: true, subtree: true });
+      // Re-assert our composed string when AutoTrimps' setTitle (or anything) writes.
+      // After we set document.title = lastTitle the observer fires again, sees
+      // title === lastTitle, and stops — no infinite loop.
+      new MutationObserver(function () {
+        if (lastTitle && document.title !== lastTitle) document.title = lastTitle;
+      }).observe(titleEl, { childList: true, characterData: true, subtree: true });
     } catch (e) {}
+    setInterval(refreshTitle, 1000);
   }
 
   // -- sources popover (opened from the repurposed version button) ------------
-  function buildSourcesPopover(vline) {
+  function buildSourcesPopover() {
     var panel = document.createElement('div');
     panel.id = 'atplay-attrib';
     panel.style.display = 'none';
     panel.innerHTML =
+      // Hidden unless automation failed to load (issue #2) — setPopoverState().
+      '<div class="atplay-fail" style="display:none">' +
+        '<b>Automation failed to load.</b> The AutoTrimps script couldn\'t be ' +
+        'fetched, so this is running as plain <b>manual</b> Trimps — nothing is ' +
+        'being automated. A hard refresh may fix it; the bundle can be briefly offline.' +
+      '</div>' +
       '<h4>Unofficial AutoTrimps build</h4>' +
       '<p>A rehosted, automated copy of <b>Trimps</b> — not the official game and ' +
       'not affiliated with its author.</p>' +
-      (vline ? '<p class="atplay-ver">' + vline + '</p>' : '') +
+      '<p class="atplay-ver"></p>' +   // filled by setPopoverState() once versions resolve
       '<p><b>Trimps</b> © 2025 Zach Hood, GPLv3.<br>' +
       '→ <a href="' + OFFICIAL_GAME + '" target="_blank" rel="noopener">Official game</a> · ' +
       '<a href="' + TRIMPS_UPSTREAM + '" target="_blank" rel="noopener">upstream source</a> · ' +
@@ -158,6 +212,15 @@
     document.body.appendChild(panel);
     return panel;
   }
+  // Reflect the automation load state into the popover: show the red failure block
+  // only on 'failed', and (re)fill the version line now that AT may have resolved.
+  function setPopoverState(panel, state) {
+    if (!panel) return;
+    var fail = panel.querySelector('.atplay-fail');
+    var ver = panel.querySelector('.atplay-ver');
+    if (fail) fail.style.display = (state === 'failed') ? 'block' : 'none';
+    if (ver) ver.textContent = versionLine();
+  }
 
   // Repurpose the game's bottom-right "V x | What's New" button (index.html:1029)
   // into our disclosure: show the versions, and open the sources popover on click
@@ -166,20 +229,34 @@
   function repurposeVersionButton(panel) {
     var span = document.getElementById('versionNumber');
     var btn = span ? span.closest('td') : null;
-    if (!btn) return;
-    var tr = span.textContent.trim();   // game version, e.g. "5.10.1"
-    var at = atVersion();
+    if (!btn) return null;
     btn.onclick = function () {
       panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
     };
-    btn.title = 'Unofficial AutoTrimps build — attribution & sources';
     btn.classList.add('atplay-verbtn');
-    // IMPORTANT: keep a #versionNumber element in the DOM. AutoTrimps' setTitle()
-    // reads getElementById('versionNumber').innerHTML on every zone change
-    // (utils.ts); destroying the span makes newZone() throw and disables AT. We
-    // rebuild the label around a preserved span carrying the game version.
-    btn.innerHTML = '⚠ AutoTrimps ' + (at || '') +
-      ' · Trimps <span id="versionNumber">' + tr + '</span> · sources';
+    return btn;   // caller renders the label via renderVersionLabel() once state is known
+  }
+  // Render the version-button label for a given automation state. NEVER emits an
+  // empty AutoTrimps version (the old "⚠ AutoTrimps  · Trimps …" bug, issue #2),
+  // and ALWAYS keeps a #versionNumber span in the DOM — AutoTrimps' setTitle()
+  // reads getElementById('versionNumber').innerHTML on every zone change (utils.ts),
+  // so destroying it would make newZone() throw and disable AT.
+  function renderVersionLabel(btn, state, tr) {
+    if (!btn) return;
+    var verSpan = ' · Trimps <span id="versionNumber">' + tr + '</span> · ';
+    btn.classList.remove('atplay-verbtn--failed', 'atplay-verbtn--loading');
+    if (state === 'ok') {
+      btn.title = 'Unofficial AutoTrimps build — attribution & sources';
+      btn.innerHTML = '⚠ AutoTrimps ' + atVersion() + verSpan + 'sources';
+    } else if (state === 'loading') {
+      btn.classList.add('atplay-verbtn--loading');
+      btn.title = 'Checking whether the AutoTrimps automation loaded…';
+      btn.innerHTML = 'AutoTrimps: loading…' + verSpan + 'sources';
+    } else { // 'failed'
+      btn.classList.add('atplay-verbtn--failed');
+      btn.title = 'AutoTrimps automation FAILED to load — running as plain manual Trimps. Click for details.';
+      btn.innerHTML = '⚠ Automation offline' + verSpan + 'why?';
+    }
   }
 
   // -- combined first-load dialog ---------------------------------------------
@@ -235,12 +312,20 @@
 
   // -- boot -------------------------------------------------------------------
   function init() {
-    var vline = versionLine();          // read versions BEFORE repurposing the button
-    setStaticTitle();
+    setupDynamicTitle();                 // #3: live "Z.. · .. He · TrimpsAT" tab title
     suppressNativePopups();
-    var panel = buildSourcesPopover(vline);
-    repurposeVersionButton(panel);
-    if (!hasExistingSave()) buildCombinedDialog(vline);
+    var tr = trimpsVersion();            // game version, carried in the label's #versionNumber span
+    var panel = buildSourcesPopover();
+    var btn = repurposeVersionButton(panel);
+    var state = atVersion() ? 'ok' : 'loading';   // 'loading' only lingers while a failure is polled
+    renderVersionLabel(btn, state, tr);
+    setPopoverState(panel, state);
+    if (!hasExistingSave()) buildCombinedDialog(versionLine());
+    // #2: resolve automation load state — flips the label to 'ok' or 'failed' (+ notice).
+    whenAutomationResolved(function (ok) {
+      renderVersionLabel(btn, ok ? 'ok' : 'failed', tr);
+      setPopoverState(panel, ok ? 'ok' : 'failed');
+    });
   }
 
   if (document.readyState === 'complete') {
