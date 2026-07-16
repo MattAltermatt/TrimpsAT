@@ -1,0 +1,5 @@
+# Local session state (auto-memory buffers / remember notes).
+.remember/
+
+# Personal per-user Claude Code overrides — never shared.
+.claude/settings.local.json
