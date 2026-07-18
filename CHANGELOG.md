@@ -13,6 +13,18 @@ saves stay importable to and from official Trimps. The three versions
 Format follows [Keep a Changelog](https://keepachangelog.com/); the fork uses
 [SemVer](https://semver.org/) starting from `0.x` while pre-1.0.
 
+## [Unreleased]
+
+### 🐛 Fixes (inherited upstream game bugs)
+- **Tooltips hid behind overlay menus:** the shared `#tooltipDiv`/`#tooltipDiv2`
+  hover tooltip sat at `z-index: 7`, below interactive overlay menus such as the
+  Heirloom screen (`#heirloomsPopup`, z-index `10`). Because the tooltip is
+  anchored to the cursor, hovering an item inside such a menu rendered its
+  description *behind* the menu. Raised the tooltips to `z-index: 1000` — above
+  the interactive-menu band (≤50) but still below the blocking-modal/toast
+  sentinels (≥99999, e.g. the save-conflict dialog and play-shell modals), so
+  true modals continue to cover a stray tooltip.
+
 ## [v0.2.0] — 2026-07-15 · dead-save removal + inherited-bug fixes
 
 Based on **Trimps 5.10.1** · **AutoTrimps v6.0.0.105**.

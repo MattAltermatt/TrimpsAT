@@ -1405,11 +1405,17 @@ body {
     padding: 10px;
     border: 2px solid blue;
     font-size: 0.9vw;
-	z-index: 7;
+	/* Cursor-anchored tooltips must paint above interactive overlay menus, which
+	   the hovered content lives inside. At z-index 7 the tooltip hid behind menus
+	   with a higher z (e.g. #heirloomsPopup at 10) whenever you hovered an item in
+	   them. Sit above the interactive-menu band (<=50) but below the modal/toast
+	   sentinels (>=99999, e.g. #saveConflictContainer, play-shell dialogs) so true
+	   blocking modals still cover a stray tooltip. */
+	z-index: 1000;
 }
 
 #tooltipDiv2{
-	z-index: 6;
+	z-index: 999;
 }
 
 #tooltipDiv.tooltipExtraHeirloom{
